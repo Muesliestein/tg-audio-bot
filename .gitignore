@@ -1,0 +1,11 @@
+# Игнорируем системные файлы
+.DS_Store
+Thumbs.db
+.bash_history
+.npmrc
+.node_repl_history
+
+# Игнорируем временные файлы и зависимости
+node_modules/
+.env
+logs/
