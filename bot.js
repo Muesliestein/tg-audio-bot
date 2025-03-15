@@ -14,11 +14,13 @@ const bot = new TelegramBot(process.env.TOKEN, {
 
 const MEMES_FILE = path.join(__dirname, 'memes.json');
 const MEMES_DIR = path.join(__dirname, 'memes');
+const RAILWAY_URL = "https://tg-audio-bot-production.up.railway.app"; // URL сервера Railway
 
 // Запускаем HTTP-сервер для раздачи файлов
 const app = express();
 app.use("/memes", express.static(MEMES_DIR));
-app.listen(3000, () => console.log("🌐 HTTP-сервер запущен на порту 3000"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🌐 HTTP-сервер запущен на порту ${PORT}`));
 
 // Проверяем наличие папки и файла с мемами
 if (!fs.existsSync(MEMES_DIR)) fs.mkdirSync(MEMES_DIR);
@@ -90,7 +92,7 @@ bot.on('inline_query', async (query) => {
         type: "voice",
         id: String(index),
         title: memeKey,
-        voice_url: `https://tg-audio-bot-production.up.railway.app`, // Замени на реальный URL
+        voice_url: `${RAILWAY_URL}/memes/${memeKey}.ogg`,
     }));
 
     bot.answerInlineQuery(query.id, results);
