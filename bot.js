@@ -18,8 +18,8 @@ const RAILWAY_URL = "https://tg-audio-bot-production.up.railway.app"; // URL с�
 
 // Запускаем HTTP-сервер для раздачи файлов
 const app = express();
-app.use("/memes", express.static(MEMES_DIR));
 const PORT = process.env.PORT || 3000;
+app.use("/memes", express.static(MEMES_DIR));
 app.listen(PORT, () => console.log(`🌐 HTTP-сервер запущен на порту ${PORT}`));
 
 // Проверяем наличие папки и файла с мемами
@@ -93,6 +93,7 @@ bot.on('inline_query', async (query) => {
         id: String(index),
         title: memeKey,
         voice_url: `${RAILWAY_URL}/memes/${memeKey}.ogg`,
+        mime_type: "audio/ogg"
     }));
 
     bot.answerInlineQuery(query.id, results);
