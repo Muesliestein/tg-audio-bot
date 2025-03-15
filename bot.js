@@ -90,7 +90,7 @@ bot.on('inline_query', async (query) => {
         type: "voice",
         id: String(index),
         title: memeKey,
-        voice_url: `https://your-server.com/memes/${memeKey}.ogg`, // Замени на реальный URL
+        voice_url: `https://tg-audio-bot-production.up.railway.app`, // Замени на реальный URL
     }));
 
     bot.answerInlineQuery(query.id, results);
