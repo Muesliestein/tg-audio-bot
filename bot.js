@@ -5,7 +5,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const { exec } = require('child_process');
 
-// Токен и настройки
+// 🔐 Переменные окружения
 const TOKEN = process.env.TOKEN;
 const RAILWAY_URL = process.env.RAILWAY_URL || "https://tg-audio-bot-production.up.railway.app";
 const PORT = process.env.PORT || 8080;
@@ -16,12 +16,12 @@ if (!TOKEN) {
 }
 
 const bot = new TelegramBot(TOKEN, { polling: true });
+
 const MEMES_FILE = path.join(__dirname, 'memes.json');
 const MEMES_DIR = path.join(__dirname, 'memes');
 
 // 🚀 HTTP-сервер для раздачи файлов
 const app = express();
-
 app.use("/memes", express.static(MEMES_DIR, {
     setHeaders: (res) => {
         res.setHeader("Content-Type", "audio/ogg");
@@ -35,21 +35,12 @@ app.listen(PORT, () => {
     console.log(`📂 Файлы доступны по ссылке: ${RAILWAY_URL}/memes/имя_файла.ogg`);
 });
 
-// Проверка и создание директорий
+// 🛠 Проверка директорий
 if (!fs.existsSync(MEMES_DIR)) fs.mkdirSync(MEMES_DIR);
 if (!fs.existsSync(MEMES_FILE)) fs.writeFileSync(MEMES_FILE, JSON.stringify({}));
 
-// Загрузка мемов
+// 🔄 Загрузка мемов
 let memes = JSON.parse(fs.readFileSync(MEMES_FILE, 'utf-8'));
-
-// 🔧 Отладка путей файлов
-console.log("📂 Папка с мемами:", MEMES_DIR);
-console.log("📄 Файлы:", fs.readdirSync(MEMES_DIR));
-
-// 🏠 Команда /start
-bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id, "Привет! Используй /menu, чтобы выбрать мем.");
-});
 
 // 🎛 **Генерация меню с категориями**
 const getCategoriesKeyboard = () => {
@@ -62,7 +53,12 @@ const getCategoriesKeyboard = () => {
     };
 };
 
-// 📌 Команда /menu (показывает категории)
+// 🏠 **Команда /start**
+bot.onText(/\/start/, (msg) => {
+    bot.sendMessage(msg.chat.id, "Привет! Используй /menu, чтобы выбрать мем.");
+});
+
+// 📌 **Команда /menu (показывает категории)**
 bot.onText(/\/menu/, (msg) => {
     bot.sendMessage(msg.chat.id, "Выбери категорию мемов:", getCategoriesKeyboard());
 });
@@ -97,11 +93,15 @@ bot.on('callback_query', (query) => {
         const memeKey = parts.slice(2).join("_");
 
         if (memes[category] && memes[category][memeKey]) {
-            const filePath = path.join(MEMES_DIR, memes[category][memeKey]);
+            const fileName = memes[category][memeKey];  // Извлекаем только имя файла
+            const filePath = path.join(MEMES_DIR, fileName);
+
+            console.log(`🎮 Запрос на воспроизведение: ${memeKey} → ${filePath}`);
 
             if (fs.existsSync(filePath)) {
                 bot.sendVoice(chatId, fs.createReadStream(filePath));
             } else {
+                console.error(`❌ Файл не найден: ${filePath}`);
                 bot.sendMessage(chatId, "❌ Файл не найден на сервере.");
             }
         }
