@@ -105,17 +105,38 @@ bot.on('inline_query', async (query) => {
         console.log(`🎵 Формируем inline-ответ: ${memeKey} → ${fileUrl}`);
 
         return {
-            type: "voice",
+            type: "article", // Изменено с voice → article (альтернативный вариант)
             id: String(index),
             title: memeKey,
-            voice_url: fileUrl,
-            mime_type: "audio/ogg"
+            input_message_content: {
+                message_text: `🎵 ${memeKey}`,
+            },
+            reply_markup: {
+                inline_keyboard: [[
+                    { text: "▶️ Отправить голосовое", callback_data: `send_voice_${memeKey}` }
+                ]]
+            }
         };
     });
 
     console.log("📤 Отправляем в inline:", results);
 
     bot.answerInlineQuery(query.id, results, { cache_time: 0 });
+});
+
+// 📤 Отправка голосовых при нажатии на кнопку
+bot.on('callback_query', async (query) => {
+    const chatId = query.message.chat.id;
+    const memeKey = query.data.replace("send_voice_", "");
+
+    if (!memes[memeKey]) {
+        return bot.sendMessage(chatId, "❌ Мем не найден.");
+    }
+
+    const filePath = path.join(MEMES_DIR, memes[memeKey]);
+    console.log(`📤 Отправляем голосовое: ${filePath}`);
+
+    bot.sendVoice(chatId, fs.createReadStream(filePath));
 });
 
 // 🔴 Логирование ошибок
