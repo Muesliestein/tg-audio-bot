@@ -13,35 +13,33 @@ const bot = new TelegramBot(process.env.TOKEN, {
 });
 
 const MEMES_FILE = path.join(__dirname, 'memes.json');
-const MEMES_DIR = path.resolve("memes"); // Используем полный путь
-const RAILWAY_URL = "https://tg-audio-bot-production.up.railway.app"; // URL Railway
+const MEMES_DIR = path.join(__dirname, 'memes');
+const RAILWAY_URL = "https://tg-audio-bot-production.up.railway.app"; // URL сервера Railway
 
-// Запускаем HTTP-сервер для раздачи файлов
+// 🚀 Запускаем HTTP-сервер для раздачи файлов
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-console.log(`📂 Папка с мемами: ${MEMES_DIR}`);
+const PORT = process.env.PORT || 8080;
 
 app.use("/memes", express.static(MEMES_DIR, {
-    setHeaders: (res, filePath) => {
-        console.log(`📡 Раздача файла: ${filePath}`);
-        res.setHeader("Content-Type", "audio/ogg"); // Указываем MIME
+    setHeaders: (res) => {
+        res.setHeader("Content-Type", "audio/ogg"); // MIME-тип для аудио
     }
 }));
 
-app.listen(PORT, "0.0.0.0", () => console.log(`🌐 HTTP-сервер запущен на ${PORT}`));
+app.listen(PORT, () => console.log(`🌐 HTTP-сервер запущен на ${PORT}`));
 
-// Проверяем наличие папки и файла с мемами
+// 🗂 Проверяем наличие папки и файла с мемами
 if (!fs.existsSync(MEMES_DIR)) fs.mkdirSync(MEMES_DIR);
 if (!fs.existsSync(MEMES_FILE)) fs.writeFileSync(MEMES_FILE, JSON.stringify({}));
 
-// Загружаем список мемов
+// 📂 Загружаем список мемов
 let memes = JSON.parse(fs.readFileSync(MEMES_FILE, 'utf-8'));
 
-// Логируем файлы
-console.log("🔍 Файлы в папке /memes:", fs.readdirSync(MEMES_DIR));
+// 🔍 Выводим файлы в логах
+console.log("📂 Папка с мемами:", MEMES_DIR);
+console.log("📄 Файлы в папке /memes:", fs.readdirSync(MEMES_DIR));
 
-// Функция для конвертации аудиофайла в OGG (Opus) для голосовых сообщений
+// 🎤 Функция для конвертации аудиофайла в OGG (Opus) для голосовых сообщений
 const convertToOgg = (inputPath, outputPath, callback) => {
     exec(`ffmpeg -i "${inputPath}" -c:a libopus -b:a 32k -ar 48000 -ac 1 "${outputPath}"`, (err) => {
         if (err) {
@@ -53,12 +51,12 @@ const convertToOgg = (inputPath, outputPath, callback) => {
     });
 };
 
-// Команда /start
+// 📩 Команда /start
 bot.onText(/\/start/, (msg) => {
     bot.sendMessage(msg.chat.id, "Привет! Используй /list, чтобы увидеть доступные аудиомемы. В группах можешь вызывать меня через @bot_name.");
 });
 
-// Вывести список доступных мемов
+// 📜 Вывести список доступных мемов
 bot.onText(/\/list/, (msg) => {
     const chatId = msg.chat.id;
     if (Object.keys(memes).length === 0) {
@@ -69,7 +67,7 @@ bot.onText(/\/list/, (msg) => {
     bot.sendMessage(chatId, `🎤 Доступные аудиомемы:\n${memeList}`);
 });
 
-// Воспроизведение мемов
+// 🔊 Воспроизведение мемов
 bot.onText(/^\/play (.+)$/, (msg, match) => {
     const chatId = msg.chat.id;
     const memeKey = match[1].trim();
@@ -78,7 +76,7 @@ bot.onText(/^\/play (.+)$/, (msg, match) => {
         return bot.sendMessage(chatId, "❌ Мем не найден.");
     }
 
-    const filePath = memes[memeKey];
+    const filePath = path.join(MEMES_DIR, memes[memeKey]);
 
     // Проверяем формат файла (если MP3/WAV → конвертируем)
     const fileExt = path.extname(filePath).toLowerCase();
@@ -98,24 +96,29 @@ bot.onText(/^\/play (.+)$/, (msg, match) => {
     }
 });
 
-// Поддержка inline-режима (бот работает в группах через @bot_name)
+// 🛠 Поддержка inline-режима (бот работает в группах через @bot_name)
 bot.on('inline_query', async (query) => {
-    console.log(`🔎 Inline-запрос: ${query.query}`);
+    console.log("🔹 Inline-запрос:", query.query);
 
-    const results = Object.keys(memes).map((memeKey, index) => ({
-        type: "voice",
-        id: String(index),
-        title: memeKey,
-        voice_url: `${RAILWAY_URL}/memes/${memeKey}.ogg`,
-        mime_type: "audio/ogg"
-    }));
+    const results = Object.keys(memes).map((memeKey, index) => {
+        const fileUrl = `${RAILWAY_URL}/memes/${memes[memeKey]}`;
+        console.log(`🎵 Формируем inline-ответ: ${memeKey} → ${fileUrl}`);
 
-    console.log("📡 Отправка inline-результатов:", results);
+        return {
+            type: "voice",
+            id: String(index),
+            title: memeKey,
+            voice_url: fileUrl,
+            mime_type: "audio/ogg"
+        };
+    });
 
-    bot.answerInlineQuery(query.id, results, { cache_time: 1 });
+    console.log("📤 Отправляем в inline:", results);
+
+    bot.answerInlineQuery(query.id, results, { cache_time: 0 });
 });
 
-// Логирование ошибок
+// 🔴 Логирование ошибок
 bot.on('polling_error', console.error);
 
 console.log("✅ Бот запущен...");
