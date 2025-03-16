@@ -18,9 +18,13 @@ const RAILWAY_URL = "https://tg-audio-bot-production.up.railway.app"; // URL с�
 
 // Запускаем HTTP-сервер для раздачи файлов
 const app = express();
-const PORT = process.env.PORT || 3000;
-app.use("/memes", express.static(MEMES_DIR));
-app.listen(PORT, () => console.log(`🌐 HTTP-сервер запущен на порту ${PORT}`));
+const PORT = process.env.PORT || 8080;
+app.use("/memes", express.static(path.join(__dirname, "memes"), {
+    setHeaders: (res, filePath) => {
+        res.setHeader("Content-Type", "audio/ogg"); // Указываем MIME
+    }
+}));
+app.listen(PORT, () => console.log(`🌐 HTTP-сервер запущен на ${PORT}`));
 
 // Проверяем наличие папки и файла с мемами
 if (!fs.existsSync(MEMES_DIR)) fs.mkdirSync(MEMES_DIR);
@@ -28,6 +32,10 @@ if (!fs.existsSync(MEMES_FILE)) fs.writeFileSync(MEMES_FILE, JSON.stringify({}))
 
 // Загружаем список мемов
 let memes = JSON.parse(fs.readFileSync(MEMES_FILE, 'utf-8'));
+
+// Выводим файлы в папке для диагностики
+console.log("🔍 Файлы в папке memes:");
+fs.readdirSync(MEMES_DIR).forEach(file => console.log(file));
 
 // Функция для конвертации аудиофайла в OGG (Opus) для голосовых сообщений
 const convertToOgg = (inputPath, outputPath, callback) => {
