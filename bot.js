@@ -96,7 +96,7 @@ bot.on('inline_query', async (query) => {
         mime_type: "audio/ogg"
     }));
 
-    bot.answerInlineQuery(query.id, results);
+    bot.answerInlineQuery(query.id, results, { cache_time: 1 });
 });
 
 // Логирование ошибок
