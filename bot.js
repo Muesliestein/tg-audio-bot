@@ -39,19 +39,39 @@ app.listen(PORT, () => {
 if (!fs.existsSync(MEMES_DIR)) fs.mkdirSync(MEMES_DIR);
 if (!fs.existsSync(MEMES_FILE)) fs.writeFileSync(MEMES_FILE, JSON.stringify({}));
 
-// 🔄 Загрузка мемов
-let memes = JSON.parse(fs.readFileSync(MEMES_FILE, 'utf-8'));
+// 🔄 Загрузка мемов с исправлением путей
+const fixMemesPaths = () => {
+    let memes = JSON.parse(fs.readFileSync(MEMES_FILE, 'utf-8'));
+    let updated = false;
+
+    Object.keys(memes).forEach(category => {
+        Object.keys(memes[category]).forEach(meme => {
+            let filePath = memes[category][meme];
+
+            if (filePath.includes("memes/")) {
+                memes[category][meme] = path.basename(filePath);
+                updated = true;
+            }
+        });
+    });
+
+    if (updated) {
+        fs.writeFileSync(MEMES_FILE, JSON.stringify(memes, null, 2));
+        console.log("✅ Исправлены пути в memes.json");
+    }
+    return memes;
+};
+
+let memes = fixMemesPaths();
 
 // 🎛 **Генерация меню с категориями**
-const getCategoriesKeyboard = () => {
-    return {
-        reply_markup: {
-            inline_keyboard: Object.keys(memes).map(category => [
-                { text: category, callback_data: `category_${category}` }
-            ])
-        }
-    };
-};
+const getCategoriesKeyboard = () => ({
+    reply_markup: {
+        inline_keyboard: Object.keys(memes).map(category => [
+            { text: category, callback_data: `category_${category}` }
+        ])
+    }
+});
 
 // 🏠 **Команда /start**
 bot.onText(/\/start/, (msg) => {
@@ -93,10 +113,10 @@ bot.on('callback_query', (query) => {
         const memeKey = parts.slice(2).join("_");
 
         if (memes[category] && memes[category][memeKey]) {
-            const fileName = memes[category][memeKey];  // Извлекаем только имя файла
+            const fileName = memes[category][memeKey];  
             const filePath = path.join(MEMES_DIR, fileName);
 
-            console.log(`🎮 Запрос на воспроизведение: ${memeKey} → ${filePath}`);
+            console.log(`🎮 Запрос на воспроизведение: ${memeKey} -> ${filePath}`);
 
             if (fs.existsSync(filePath)) {
                 bot.sendVoice(chatId, fs.createReadStream(filePath));
