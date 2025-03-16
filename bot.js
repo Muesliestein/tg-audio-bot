@@ -25,6 +25,21 @@ app.use("/memes", (req, res, next) => {
     console.log(`🔍 Запрос к файлу: ${req.url}`);
     next();
 });
+// Проверяем путь к файлам перед раздачей
+console.log(`📂 Папка с мемами: ${path.resolve("memes")}`);
+fs.readdir(path.resolve("memes"), (err, files) => {
+    if (err) {
+        console.error("❌ Ошибка чтения папки memes:", err);
+    } else {
+        console.log(`📂 Файлы в папке memes:`, files);
+    }
+});
+
+// Логируем запросы к файлам
+app.use("/memes", (req, res, next) => {
+    console.log(`🔍 Запрос к файлу: ${req.url}`);
+    next();
+});
 
 // **📌 Раздаём файлы с правильным MIME-типом**
 app.use("/memes", express.static(path.join(__dirname, "memes"), {
