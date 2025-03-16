@@ -211,6 +211,54 @@ bot.onText(/^\/play (.+)$/, (msg, match) => {
         });
 });
 
+const getCategoriesKeyboard = () => {
+    return {
+        reply_markup: {
+            inline_keyboard: Object.keys(memes).map(category => [
+                { text: category, callback_data: `category_${category}` }
+            ])
+        }
+    };
+};
+
+bot.on('callback_query', (query) => {
+    const chatId = query.message.chat.id;
+    const category = query.data.replace("category_", ""); // Убираем префикс
+
+    if (memes[category]) {
+        const keyboard = {
+            reply_markup: {
+                inline_keyboard: Object.keys(memes[category]).map(meme => [
+                    { text: meme, callback_data: `meme_${category}_${meme}` }
+                ])
+            }
+        };
+        bot.sendMessage(chatId, `Выбери мем из категории *${category}*:`, keyboard);
+    }
+});
+
+bot.on('callback_query', (query) => {
+    const chatId = query.message.chat.id;
+    
+    if (query.data.startsWith("meme_")) {
+        const parts = query.data.split("_");
+        const category = parts[1];
+        const memeKey = parts.slice(2).join("_");
+
+        if (memes[category] && memes[category][memeKey]) {
+            const filePath = path.join(MEMES_DIR, memes[category][memeKey]);
+            bot.sendVoice(chatId, fs.createReadStream(filePath));
+        }
+    }
+});
+
+
+
+bot.onText(/\/menu/, (msg) => {
+    bot.sendMessage(msg.chat.id, "Выбери категорию мемов:", getCategoriesKeyboard());
+});
+
+
 // Поддержка inline-режима
 bot.on('inline_query', async (query) => {
     console.log("🔹 Inline-запрос:", query.query);
